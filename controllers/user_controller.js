@@ -1,4 +1,5 @@
 import { catchAsyncError } from "../middlewares/catchAsyncError.js";
+import Car from "../models/car_model.js";
 import { User } from "../models/user_model.js";
 import router from "../routes/user_routes.js";
 import ErrorHandler from "../utils/errorHandler.js";
@@ -82,4 +83,64 @@ export const getMyProfile = catchAsyncError(async (req, res, next) => {
       });
 
 
+});
+
+
+export const getRides = catchAsyncError(async(req, res, next) => {
+    console.log("getRides called");
+    const { origin, destination, category, required_hours } = req.query;
+
+        // Find cars based on the provided category
+        const cars = await Car.find({ category: category });
+
+        // Filter cars based on current_city and create a response array
+        const response = cars
+            .filter(car => car.current_city.toLowerCase() === origin.toLowerCase())
+            .map(car => {
+                return {
+                    car_id: car._id,
+                    category: car.category,
+                    model: car.model,
+                    number_plate: car.number_plate,
+                    current_city: car.current_city,
+                    rent_per_hr: car.rent_per_hr,
+                    rent_history: car.rent_history.map(history => ({
+                        origin: history.origin,
+                        destination: history.destination,
+                        amount: history.rent_amount
+                    })),
+                    total_payable_amt: car.rent_per_hr * required_hours
+                };
+            });
+
+        // Send the response
+        res.status(200).json(response);
+});
+
+export const rent = catchAsyncError(async (req, res, next) => {
+  const { car_id, origin, destination, hours_requirement } = req.body;
+
+  // Find the car by ID
+  const car = await Car.findById(car_id);
+  if (!car) {
+    return res.status(404).json({
+      status: "Car not found",
+      status_code: 404,
+    });
+  }
+  if (car.current_city.toLowerCase() !== origin.toLowerCase()) {
+    return res.status(400).json({
+      status: "No car is available at the moment",
+      status_code: 400,
+    });
+  }
+  // Calculate the total payable amount
+  const total_payable_amt = car.rent_per_hr * hours_requirement;
+  // Send a success response
+  res.status(200).json({
+    status: "Car rented successfully",
+    status_code: 200,
+    rent_id: rent_id,
+    total_payable_amt: total_payable_amt,
+  });
 });
