@@ -49,7 +49,6 @@ export const login = catchAsyncError(async (req, res, next) => {
 
   const user = await User.findOne({ email }).select("+password");
 
-
   if (!user) return new ErrorHandler("Incorrect user or password", 401);
 
   // upload file on cloudnary
@@ -57,12 +56,12 @@ export const login = catchAsyncError(async (req, res, next) => {
 
   if (!isMatch) return new ErrorHandler("Incorrect user or password", 401);
 
-
   sendToken(res, user, "Welcome back", 201);
 });
 
 export const logout = catchAsyncError(async (req, res, next) => {
-  res.status(200)
+  res
+    .status(200)
     .cookie("token", null, {
       expires: new Date(Date.now()),
     })
@@ -73,52 +72,50 @@ export const logout = catchAsyncError(async (req, res, next) => {
 });
 
 export const getMyProfile = catchAsyncError(async (req, res, next) => {
-    const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        user,
-      });
-
-
+  res.status(200).json({
+    success: true,
+    user,
+  });
 });
 
+/////////////////////////AUTH//////////////////////////////////////
 
-export const getRides = catchAsyncError(async(req, res, next) => {
-    console.log("getRides called");
-    const { origin, destination, category, required_hours } = req.query;
+export const getRides = catchAsyncError(async (req, res, next) => {
+  console.log("getRides called");
+  const { origin, destination, category, required_hours } = req.query;
 
-        // Find cars based on the provided category
-        const cars = await Car.find({ category: category });
+  // Find cars based on the provided category
+  const cars = await Car.find({ category: category });
 
-        // Filter cars based on current_city and create a response array
-        const response = cars
-            .filter(car => car.current_city.toLowerCase() === origin.toLowerCase())
-            .map(car => {
-                return {
-                    car_id: car._id,
-                    category: car.category,
-                    model: car.model,
-                    number_plate: car.number_plate,
-                    current_city: car.current_city,
-                    rent_per_hr: car.rent_per_hr,
-                    rent_history: car.rent_history.map(history => ({
-                        origin: history.origin,
-                        destination: history.destination,
-                        amount: history.rent_amount
-                    })),
-                    total_payable_amt: car.rent_per_hr * required_hours
-                };
-            });
+  // Filter cars based on current_city and create a response array
+  const response = cars
+    .filter((car) => car.current_city.toLowerCase() === origin.toLowerCase())
+    .map((car) => {
+      return {
+        car_id: car._id,
+        category: car.category,
+        model: car.model,
+        number_plate: car.number_plate,
+        current_city: car.current_city,
+        rent_per_hr: car.rent_per_hr,
+        rent_history: car.rent_history.map((history) => ({
+          origin: history.origin,
+          destination: history.destination,
+          amount: history.rent_amount,
+        })),
+        total_payable_amt: car.rent_per_hr * required_hours,
+      };
+    });
 
-        // Send the response
-        res.status(200).json(response);
+  // Send the response
+  res.status(200).json(response);
 });
 
 export const rent = catchAsyncError(async (req, res, next) => {
   const { car_id, origin, destination, hours_requirement } = req.body;
+  console.log(req.body);
 
   // Find the car by ID
   const car = await Car.findById(car_id);
@@ -140,7 +137,6 @@ export const rent = catchAsyncError(async (req, res, next) => {
   res.status(200).json({
     status: "Car rented successfully",
     status_code: 200,
-    rent_id: rent_id,
     total_payable_amt: total_payable_amt,
   });
 });

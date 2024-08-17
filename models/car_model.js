@@ -37,6 +37,7 @@ const carSchema = new mongoose.Schema({
     type: Array,
     default: [],
   },
+
 });
 
 const Car = mongoose.model("Car", carSchema);
